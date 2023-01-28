@@ -9,6 +9,7 @@
 int check_function(char *);
 int check(char [], char[], int );
 void create_file(char *,int );
+void cat(char *);
 
 int main()
 {
@@ -39,6 +40,20 @@ int check_function(char *command)
         --i;
         create_file(cf_address,i);
         return 1;
+    }
+    /*if(check(command,"insertstr --file ",17))
+    {
+    }*/
+    if (check(command,"cat --file ", 11))
+    {
+        char filename[100000];
+        int i=0;
+        while(command[i+11]!='\0')
+        {
+            filename[i]=command[i+11];
+            i++;
+        }
+        cat(filename);
     }
     else if(check(command,"exit",4))
         return 0;
@@ -95,5 +110,42 @@ void create_file(char *address, int lenght)
     {
         printf("File existed\n");
         fclose(f);
+    }
+}
+
+void cat(char filename[])
+{
+    if(filename[0]=='"')
+    {
+        int i;
+        for(i=0; filename[i]!='\0'; i++)
+        {
+            filename[i]=filename[i+1];
+        }
+        filename[i]='\0';
+        filename[i-2]='\0';
+    }
+    if(filename[0]=='/')
+    {
+        int i;
+        for(i=0; filename[i]!='\0'; i++)
+        {
+            filename[i]=filename[i+1];
+        }
+        filename[i]='\0';
+    }
+    FILE *fp=fopen(filename, "r");
+    if(fp==NULL)
+    {
+        printf("File doesn't exist or is empty!");
+    }
+    else
+    {
+        while(!feof(fp))
+        {
+            int c=fgetc(fp);
+            printf("%c", c);
+        }
+        fclose(fp);
     }
 }
