@@ -6,10 +6,12 @@
 
 
 //Prototypes
+char *path(char *);
 int check_function(char *);
 int check(char [], char[], int );
 void create_file(char *,int );
 void cat(char *);
+void insertstr(char *);
 
 int main()
 {
@@ -41,9 +43,18 @@ int check_function(char *command)
         create_file(cf_address,i);
         return 1;
     }
-    /*if(check(command,"insertstr --file ",17))
+    if(check(command,"insertstr --file ",17))
     {
-    }*/
+        char input[10000];
+        int i=0;
+        while(command[i+17]!='\0')
+        {
+            input[i]=command[i+17];
+            i++;
+        }
+        insertstr(input);
+        return 1;
+    }
     if (check(command,"cat --file ", 11))
     {
         char filename[100000];
@@ -54,6 +65,7 @@ int check_function(char *command)
             i++;
         }
         cat(filename);
+        return 1;
     }
     else if(check(command,"exit",4))
         return 0;
@@ -71,6 +83,30 @@ int check(char command[], char line[], int lenght_line)
     return 1;
 }
 
+char *path(char *address)
+{
+    int k=0;
+    if(address[0]=='"')
+    {
+        int k;
+        for(k=0; address[k]!='\0'; k++)
+        {
+            address[k]=address[k+1];
+        }
+        address[k]='\0';
+        address[k-2]='\0';
+    }
+    if(address[0]=='/')
+    {
+        int i;
+        for(i=0; address[i]!='\0'; i++)
+        {
+            address[i]=address[i+1];
+        }
+        address[i]='\0';
+    }
+    return address;
+}
 void create_file(char *address, int lenght)
 {
     char path[1000];
@@ -115,29 +151,11 @@ void create_file(char *address, int lenght)
 
 void cat(char filename[])
 {
-    if(filename[0]=='"')
-    {
-        int i;
-        for(i=0; filename[i]!='\0'; i++)
-        {
-            filename[i]=filename[i+1];
-        }
-        filename[i]='\0';
-        filename[i-2]='\0';
-    }
-    if(filename[0]=='/')
-    {
-        int i;
-        for(i=0; filename[i]!='\0'; i++)
-        {
-            filename[i]=filename[i+1];
-        }
-        filename[i]='\0';
-    }
-    FILE *fp=fopen(filename, "r");
+    char *newname=path(filename);
+    FILE *fp=fopen(newname, "r");
     if(fp==NULL)
     {
-        printf("File doesn't exist or is empty!");
+        printf("File doesn't exist or is empty!\n");
     }
     else
     {
@@ -146,6 +164,122 @@ void cat(char filename[])
             int c=fgetc(fp);
             printf("%c", c);
         }
+        printf("\n");
         fclose(fp);
     }
+}
+
+void insertstr(char *input)
+{
+    char *address1,*add,*pos;
+    char *tok=strtok(input," ");
+    address1=tok;
+    if(*(address1+0)=='"')
+    {
+        tok=strtok(NULL," ");
+        address1=strcat(address1,tok);
+    }
+    tok=strtok(NULL," ");
+    if(strcmp(tok,"--str")!=0)
+    {
+        printf("Invalid command!\n");
+    }
+    tok=strtok(NULL," ");
+    add=tok;
+    if(*(add+0)=='"')
+    {
+        tok=strtok(NULL," ");
+        char tok2[1]=" ";
+        char *tokk=strcat(tok2,tok);
+        add=strcat(add,tokk);
+    }
+    tok=strtok(NULL," ");
+    if(strcmp(tok,"--pos")!=0)
+    {
+        printf("Invalid command!\n");
+    }
+    tok=strtok(NULL," ");
+    pos=tok;
+    int x=0;
+    int line_num=0,char_num=0;
+    while(*(pos+x)!=':')
+    {
+        line_num=line_num*10+(*(pos+x)-'0');
+        x++;
+    }
+    x++;
+    while(*(pos+x)!='\0')
+    {
+        char_num=char_num*10+(*(pos+x)-'0');
+        x++;
+    }
+    int k=0;
+    char *address=path(address1);
+    FILE *file=fopen(address,"r");
+    if(file==NULL)
+    {
+        printf("File doesn't exist\n");
+    }
+    FILE *temp=fopen("temp.t", "w");
+    for(int i=1; i<line_num; i++)
+    {
+        char c=fgetc(file);
+        fputc(c,temp);
+    }
+    for(int j=0; j<char_num; j++)
+    {
+        char c=fgetc(file);
+        fputc(c,temp);
+    }
+    int r=0,cot=0;
+    while(*(add+r)!='\0')
+    {
+        if(*(add+r)=='"' && cot==0)
+        {
+            cot=1;
+        }
+        else if(*(add+r)=='"' && cot==1)
+        {
+            break;
+        }
+        else if((int)*(add+r)==92)
+        {
+            if(*(add+r+1)=='n')
+                {
+                    fputc('\n',temp);
+                    r++;
+                }
+            else
+                {
+                    fputc(*(add+r),temp);
+                    fputc(*(add+r+1),temp);
+                    r++;
+                }
+        }
+        else
+            fputc(*(add+r),temp);
+        r++;
+    }
+    char after;
+    after=fgetc(file);
+    while(after!=EOF)
+    {
+        fputc(after,temp);
+        after=fgetc(file);
+    }
+    fclose(file);
+    fclose(temp);
+    file=fopen(input,"w");
+    temp=fopen("temp.t","r");
+    char text;
+    text=fgetc(temp);
+    while(text!=EOF)
+    {
+        fputc(text,file);
+        text=fgetc(temp);
+    }
+    fclose(temp);
+    fclose(file);
+    remove("temp.t");
+    printf("Text inserted successfully :)\n");
 }
