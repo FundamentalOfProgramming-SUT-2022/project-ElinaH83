@@ -21,6 +21,8 @@ int cut(char *);
 int paste(char *);
 int clipboard_f(char *,int ,int ,int );
 int clipboard_b(char *, int ,int ,int );
+void undo_file(char *);
+int undo(char *);
 
 int main()
 {
@@ -327,6 +329,47 @@ int check_function(char *command)
         paste(input);
         return 1;
     }
+    else if(check(command,"undo",4))
+    {
+        char file[10];
+        scanf("%s",file);
+        getchar();
+        if(strcmp(file,"--file")!=0)
+        {
+            printf("Invalid command\n");
+            return 1;
+        }
+        char a1;
+        char input[100];
+        a1=getchar();
+        if(a1=='"')
+        {
+            int l=0;
+            a1=getchar();
+            while(a1!='"')
+            {
+                input[l]=a1;
+                a1=getchar();
+                l++;
+            }
+            input[l]='\0';
+        }
+        else
+        {
+            input[0]=a1;
+            int u=1;
+            a1=getchar();
+            while (a1!='\n')
+            {
+                input[u]=a1;
+                a1=getchar();
+                u++;
+            }
+            input[u]='\0';
+        }
+        undo(input);
+        return 1;
+    }
     else if(check(command,"exit",4))
         return 0;
     else
@@ -430,6 +473,8 @@ int cat(char filename[])
 
 int insertstr(char *input)
 {
+    char *address=path(input);
+    undo_file(address);
     char str[10];
     scanf("%s",str);
     if(strcmp(str,"--str")!=0)
@@ -475,7 +520,6 @@ int insertstr(char *input)
     }
     int line_num,char_num;
     scanf("%d:%d", &line_num, &char_num);
-    char *address=path(input);
     FILE *file=fopen(address,"r");
     if(file==NULL)
     {
@@ -539,6 +583,8 @@ int insertstr(char *input)
 
 int removestr(char *input,int flag)
 {
+    char *address=path(input);
+    undo_file(address);
     char pos[10];
     scanf("%s",pos);
     getchar();
@@ -563,7 +609,6 @@ int removestr(char *input,int flag)
     getchar();
     char move[3];
     scanf("%s",move);
-    char *address=path(input);
     if(strcmp(move,"-b")==0)
     {
         remove_b(address,line_num,char_num,size_num);
@@ -673,6 +718,7 @@ int remove_f(char *address ,int line_num ,int char_num ,int size_num)
 
 int copy(char *input, int flag)
 {
+    char *address=path(input);
     char pos[10];
     scanf("%s",pos);
     getchar();
@@ -697,7 +743,6 @@ int copy(char *input, int flag)
     getchar();
     char move[3];
     scanf("%s",move);
-    char *address=path(input);
     if(strcmp(move,"-f")==0)
     {
         clipboard_f(address,line_num,char_num,size_num);
@@ -718,6 +763,8 @@ int copy(char *input, int flag)
 
 int cut(char *input)
 {
+    char *address=path(input);
+    undo_file(address);
     char pos[10];
     scanf("%s",pos);
     getchar();
@@ -742,7 +789,6 @@ int cut(char *input)
     getchar();
     char move[3];
     scanf("%s",move);
-    char *address=path(input);
     if(strcmp(move,"-f")==0)
     {
         clipboard_f(address,line_num,char_num,size_num);
@@ -764,6 +810,8 @@ int cut(char *input)
 
 int paste(char *input)
 {
+    char *address=path(input);
+    undo_file(address);
     char pos[10];
     scanf("%s",pos);
     getchar();
@@ -774,7 +822,6 @@ int paste(char *input)
     }
     int line_num,char_num;
     scanf("%d:%d", &line_num, &char_num);
-    char *address=path(input);
     FILE *file=fopen(address,"r");
     if(file==NULL)
     {
@@ -887,5 +934,43 @@ int clipboard_b(char *address, int line_num, int char_num, int size_num)
     }
     fclose(file);
     fclose(clipb);
+    return 0;
+}
+
+void undo_file(char *address)
+{
+    FILE *file=fopen(address,"r");
+    FILE *un_file=fopen("undo.txt","w");
+    char chr=fgetc(file);
+    while(chr!=EOF)
+    {
+        fputc(chr,un_file);
+        chr=fgetc(file);
+    }
+    fclose(file);
+    fclose(un_file);
+}
+
+int undo(char *input)
+{
+    char *address=path(input);
+    FILE *file=fopen(address,"r");
+    if(file==NULL)
+    {
+        printf("File doesn't exist\n");
+        return 0;
+    }
+    fclose(file);
+    file=fopen(address,"w");
+    FILE *un_file=fopen("undo.txt","r");
+    char chr=fgetc(un_file);
+    while(chr!=EOF)
+    {
+        fputc(chr,file);
+        chr=fgetc(un_file);
+    }
+    fclose(file);
+    fclose(un_file);
+    printf("Undo successfully!\n");
     return 0;
 }
