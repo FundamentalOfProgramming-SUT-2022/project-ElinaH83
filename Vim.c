@@ -4,6 +4,7 @@
 #include <sys/stat.h>
 #include <dir.h>
 
+//Elina Hozhabri 401170661
 
 //Prototypes
 char *path(char *);
