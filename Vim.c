@@ -28,6 +28,7 @@ int clipboard_f(char *,int ,int ,int );
 int clipboard_b(char *, int ,int ,int );
 void undo_file(char *);
 int undo(char *);
+int find(char *);
 void auto_indent(char *);
 void compare(char *, char *);
 void tree(char *, int ,int );
@@ -476,6 +477,46 @@ int check_function(char *command)
             input2[u]='\0';
         }
         compare(input1,input2);
+        return 1;
+    }
+    else if (!strcmp(command,"find"))
+    {
+        char file[7];
+        scanf("%s",file);
+        getchar();
+        if(strcmp(file,"--file")!=0)
+        {
+            return -1;
+        }
+        char a1;
+        char input[100];
+        a1=getchar();
+        if(a1=='"')
+        {
+            int l=0;
+            a1=getchar();
+            while(a1!='"')
+            {
+                input[l]=a1;
+                a1=getchar();
+                l++;
+            }
+            input[l]='\0';
+        }
+        else
+        {
+            input[0]=a1;
+            int u=1;
+            a1=getchar();
+            while (a1!=' ')
+            {
+                input[u]=a1;
+                a1=getchar();
+                u++;
+            }
+            input[u]='\0';
+        }
+        find(input);
         return 1;
     }
     else if(!strcmp(command,"exit"))
@@ -1133,6 +1174,151 @@ int undo(char *input)
     fclose(file);
     fclose(un_file);
     printf("Undo successfully!\n");
+    return 0;
+}
+
+int find(char *input)
+{
+    int wildcard=0;
+    char *address=path(input);
+    char str[6];
+    scanf("%s",str);
+    if(strcmp(str,"--str")!=0)
+    {
+        printf("Invalid command!\n");
+        return 0;
+    }
+    getchar();
+    char f_chr=getchar();
+    char find_chr[100];
+    char correct_find_chr[100];
+    int l=0;
+    if(f_chr=='"')
+    {
+        f_chr=getchar();
+        while(f_chr!='"')
+        {
+            find_chr[l]=f_chr;
+            f_chr=getchar();
+            l++;
+        }
+        find_chr[l]='\0';
+    }
+    else
+    {
+        find_chr[l]=f_chr;
+        f_chr=getchar();
+        l++;
+        while (f_chr!='\n')
+        {
+            find_chr[l]=f_chr;
+            f_chr=getchar();
+            l++;
+        }
+        find_chr[l]='\0';
+    }
+    int len=strlen(find_chr);
+    if(find_chr[len-1]=='*')
+    {
+        if(find_chr[len-2]=='\\')
+        {
+            strncpy(correct_find_chr,find_chr,len-2);
+            strcat(correct_find_chr,"*");
+        }
+        else
+        {
+            strncpy(correct_find_chr,find_chr,len-1);
+            wildcard=2;
+        }
+    }
+    else if(find_chr[0]=='*')
+    {
+        for(int i=0;i<len-1;i++)
+        {
+            correct_find_chr[i]=find_chr[i+1];
+        }
+        wildcard=1;
+    }
+    else
+    {
+        strcpy(correct_find_chr,find_chr);
+    }
+    int len_correct=strlen(correct_find_chr);
+    FILE *file=fopen(address,"r");
+    char strtext[200];
+    char fulltext[2000];
+    while(!feof(file))
+    {
+        fgets(strtext,200,file);
+        strcat(fulltext,strtext);
+    }
+    if(strstr(fulltext,correct_find_chr))
+    {
+        int pointer=0;
+        for(int i=0;i<strlen(fulltext);i++)
+        {
+            if(fulltext[i]==correct_find_chr[0])
+            {
+                pointer=1;
+                for(int j=1; j<len_correct;j++)
+                {
+                    if(fulltext[i+j]==correct_find_chr[j])
+                    {
+                        pointer++;
+                    }
+                    else
+                    {
+                        break;
+                    }
+                }
+                if(pointer==len_correct)
+                {
+                    pointer=i;
+                    if(wildcard==1)
+                    {
+                        while(fulltext[pointer]!=' ')
+                        {
+                            pointer--;
+                            if(pointer<0)
+                            {
+                                break;
+                            }
+                        }
+                        pointer++;
+                    }
+                    else if(wildcard==2)
+                    {
+                        pointer--;
+                        if(pointer<0)
+                        {
+                            pointer=0;
+                            printf("The first occurrence index is: %d\n",pointer);
+                            fclose(file);
+                            return 0;
+                        }
+                        if(fulltext[pointer]!=' ')
+                        {
+                            continue;
+                        }
+                        pointer++;
+                    }
+                    printf("The first occurrence index is: %d\n",pointer);
+                    fclose(file);
+                    return 0;
+                }
+            }
+        }
+        printf("No item found.");
+        fclose(file);
+        return -1;
+    }
+    else
+    {
+        printf("No item found.");
+        fclose(file);
+        return -1;
+    }
+    fclose(file);
     return 0;
 }
 
