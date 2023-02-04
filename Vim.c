@@ -2,14 +2,18 @@
 #include <string.h>
 #include <stdlib.h>
 #include <sys/stat.h>
+#include <sys/types.h>
 #include <dir.h>
+#include <dirent.h>
+#include <windows.h>
+#include <unistd.h>
+#include <ctype.h>
 
-//Elina Hozhabri 401170661
 
 //Prototypes
 char *path(char *);
 int check_function(char *);
-int check(char [], char[], int );
+long line_counter(char *,int );
 void change_file(char *);
 void create_file(char *);
 int cat(char *);
@@ -24,12 +28,16 @@ int clipboard_f(char *,int ,int ,int );
 int clipboard_b(char *, int ,int ,int );
 void undo_file(char *);
 int undo(char *);
+void auto_indent(char *);
+void compare(char *, char *);
+void tree(char *, int ,int );
 
 int main()
 {
+    printf("Welcome ^^\nPlease write your command:\n");
     while(1)
     {
-        char command[1000];
+        char command[20];
         scanf("%s",command);
         getchar();
         int result=check_function(command);
@@ -43,15 +51,14 @@ int main()
 
 int check_function(char *command)
 {
-    if(check(command,"createfile",10))
+    if(!strcmp(command,"createfile"))
     {
-        char file[10];
+        char file[7];
         scanf("%s",file);
         getchar();
         if(strcmp(file,"--file")!=0)
         {
-            printf("Invalid command\n");
-            return 1;
+            return -1;
         }
         char a1;
         char input[100];
@@ -84,15 +91,14 @@ int check_function(char *command)
         create_file(input);
         return 1;
     }
-    else if(check(command,"insertstr",9))
+    else if(!strcmp(command,"insertstr"))
     {
-        char file[10];
+        char file[7];
         scanf("%s",file);
         getchar();
         if(strcmp(file,"--file")!=0)
         {
-            printf("Invalid command\n");
-            return 1;
+            return -1;
         }
         char a1;
         char input[100];
@@ -125,15 +131,14 @@ int check_function(char *command)
         insertstr(input);
         return 1;
     }
-    else if (check(command,"cat",3))
+    else if (!strcmp(command,"cat"))
     {
-        char file[10];
+        char file[7];
         scanf("%s",file);
         getchar();
         if(strcmp(file,"--file")!=0)
         {
-            printf("Invalid command\n");
-            return 1;
+            return -1;
         }
         char a1;
         char input[100];
@@ -166,15 +171,14 @@ int check_function(char *command)
         cat(input);
         return 1;
     }
-    else if(check(command,"removestr",9))
+    else if(!strcmp(command,"removestr"))
     {
-        char file[10];
+        char file[7];
         scanf("%s",file);
         getchar();
         if(strcmp(file,"--file")!=0)
         {
-            printf("Invalid command\n");
-            return 1;
+            return -1;
         }
         char a1;
         char input[100];
@@ -207,15 +211,14 @@ int check_function(char *command)
         removestr(input,1);
         return 1;
     }
-    else if(check(command,"copystr",7))
+    else if(!strcmp(command,"copystr"))
     {
-        char file[10];
+        char file[7];
         scanf("%s",file);
         getchar();
         if(strcmp(file,"--file")!=0)
         {
-            printf("Invalid command\n");
-            return 1;
+            return -1;
         }
         char a1;
         char input[100];
@@ -248,15 +251,14 @@ int check_function(char *command)
         copy(input,1);
         return 1;
     }
-    else if(check(command,"cutstr",6))
+    else if(!strcmp(command,"cutstr"))
     {
-        char file[10];
+        char file[7];
         scanf("%s",file);
         getchar();
         if(strcmp(file,"--file")!=0)
         {
-            printf("Invalid command\n");
-            return 1;
+            return -1;
         }
         char a1;
         char input[100];
@@ -289,15 +291,14 @@ int check_function(char *command)
         cut(input);
         return 1;
     }
-    else if(check(command,"pastestr",8))
+    else if(!strcmp(command,"pastestr"))
     {
-        char file[10];
+        char file[7];
         scanf("%s",file);
         getchar();
         if(strcmp(file,"--file")!=0)
         {
-            printf("Invalid command\n");
-            return 1;
+            return -1;
         }
         char a1;
         char input[100];
@@ -330,15 +331,14 @@ int check_function(char *command)
         paste(input);
         return 1;
     }
-    else if(check(command,"undo",4))
+    else if(!strcmp(command,"undo"))
     {
-        char file[10];
+        char file[7];
         scanf("%s",file);
         getchar();
         if(strcmp(file,"--file")!=0)
         {
-            printf("Invalid command\n");
-            return 1;
+            return -1;
         }
         char a1;
         char input[100];
@@ -371,20 +371,117 @@ int check_function(char *command)
         undo(input);
         return 1;
     }
-    else if(check(command,"exit",4))
+    else if(!strcmp(command,"tree"))
+    {
+        int depth;
+        scanf("%d", &depth);
+        printf("Your tree with depth %d:\n", depth);
+        tree("./root",0,depth);
+        return 1;
+    }
+    else if(!strcmp(command,"auto-indent"))
+    {
+        char file[7];
+        scanf("%s",file);
+        getchar();
+        if(strcmp(file,"--file")!=0)
+        {
+            return -1;
+        }
+        char a1;
+        char input[100];
+        a1=getchar();
+        if(a1=='"')
+        {
+            int l=0;
+            a1=getchar();
+            while(a1!='"')
+            {
+                input[l]=a1;
+                a1=getchar();
+                l++;
+            }
+            input[l]='\0';
+        }
+        else
+        {
+            input[0]=a1;
+            int u=1;
+            a1=getchar();
+            while (a1!='\n')
+            {
+                input[u]=a1;
+                a1=getchar();
+                u++;
+            }
+            input[u]='\0';
+        }
+        auto_indent(input);
+        return 1;
+    }
+    else if(!strcmp(command,"compare"))
+    {
+        char input1[100],input2[100];
+        char a1,a2;
+        a1=getchar();
+        if(a1=='"')
+        {
+            int l=0;
+            a1=getchar();
+            while(a1!='"')
+            {
+                input1[l]=a1;
+                a1=getchar();
+                l++;
+            }
+            input1[l]='\0';
+        }
+        else
+        {
+            input1[0]=a1;
+            int u=1;
+            a1=getchar();
+            while (a1!=' ')
+            {
+                input1[u]=a1;
+                a1=getchar();
+                u++;
+            }
+            input1[u]='\0';
+        }
+        a2=getchar();
+        if(a2=='"')
+        {
+            int l=0;
+            a2=getchar();
+            while(a2!='"')
+            {
+                input2[l]=a2;
+                a2=getchar();
+                l++;
+            }
+            input2[l]='\0';
+        }
+        else
+        {
+            input2[0]=a2;
+            int u=1;
+            a2=getchar();
+            while (a2!='\n')
+            {
+                input2[u]=a2;
+                a2=getchar();
+                u++;
+            }
+            input2[u]='\0';
+        }
+        compare(input1,input2);
+        return 1;
+    }
+    else if(!strcmp(command,"exit"))
         return 0;
     else
         return -1;
-}
-
-int check(char command[], char line[], int lenght_line)
-{
-    for(int i=0; i<lenght_line; i++)
-    {
-        if(command[i]!= line[i])
-            return 0;
-    }
-    return 1;
 }
 
 char *path(char *address)
@@ -404,7 +501,7 @@ char *path(char *address)
 void change_file(char *address)
 {
     FILE *file=fopen(address,"w");
-    FILE *temp=fopen("temp.t","r");
+    FILE *temp=fopen("temp.txt","r");
     char text;
     text=fgetc(temp);
     while(text!=EOF)
@@ -414,7 +511,29 @@ void change_file(char *address)
     }
     fclose(temp);
     fclose(file);
-    remove("temp.t");
+    remove("temp.txt");
+}
+
+long line_counter(char *address,int num)
+{
+    FILE *file=fopen(address,"r");
+    if(file==NULL)
+    {
+        printf("File%d doesn't exist\n",num);
+        return -1;
+    }
+    long line=0;
+    char c=fgetc(file);
+    while(c!=EOF)
+    {
+        if(c=='\n')
+        {
+            line++;
+        }
+        c=fgetc(file);
+    }
+    fclose(file);
+    return line;
 }
 
 void create_file(char *address)
@@ -527,7 +646,7 @@ int insertstr(char *input)
         printf("File doesn't exist\n");
         return 0;
     }
-    FILE *temp=fopen("temp.t", "w");
+    FILE *temp=fopen("temp.txt", "w");
     for(int i=1; i<line_num; i++)
     {
         char str[1000];
@@ -610,13 +729,29 @@ int removestr(char *input,int flag)
     getchar();
     char move[3];
     scanf("%s",move);
+    FILE *file=fopen(address,"r");
+    if(file==NULL)
+    {
+        printf("File doesn't exist\n");
+        return 0;
+    }
+    fclose(file);
+    int result;
     if(strcmp(move,"-b")==0)
     {
-        remove_b(address,line_num,char_num,size_num);
+        result=remove_b(address,line_num,char_num,size_num);
+        if(result==0)
+        {
+            return 0;
+        }
     }
     else if(strcmp(move,"-f")==0)
     {
-        remove_f(address,line_num,char_num,size_num);
+        result=remove_f(address,line_num,char_num,size_num);
+        if(result==0)
+        {
+            return 0;
+        }
     }
     else
     {
@@ -631,11 +766,6 @@ int removestr(char *input,int flag)
 int remove_b(char *address,int line_num, int char_num, int size_num)
 {
     FILE *file=fopen(address,"r");
-    if(file==NULL)
-    {
-        printf("File doesn't exist\n");
-        return 0;
-    }
     char str[1000];
     char *string1=(char*) calloc(1000,sizeof(char));
     for(int i=1; i<line_num; i++)
@@ -659,7 +789,7 @@ int remove_b(char *address,int line_num, int char_num, int size_num)
         printf("File doesn't exist\n");
         return 0;
     }
-    FILE *temp=fopen("temp.t", "w");
+    FILE *temp=fopen("temp.txt", "w");
     for(int i=0; i<num; i++)
     {
         char c=fgetc(file);
@@ -678,18 +808,13 @@ int remove_b(char *address,int line_num, int char_num, int size_num)
     fclose(file);
     fclose(temp);
     change_file(address);
-    return 0;
+    return 1;
 }
 
 int remove_f(char *address ,int line_num ,int char_num ,int size_num)
 {
     FILE *file=fopen(address,"r");
-    if(file==NULL)
-    {
-        printf("File doesn't exist\n");
-        return 0;
-    }
-    FILE *temp=fopen("temp.t", "w");
+    FILE *temp=fopen("temp.txt", "w");
     for(int i=1; i<line_num; i++)
     {
         char str[1000];
@@ -714,7 +839,7 @@ int remove_f(char *address ,int line_num ,int char_num ,int size_num)
     fclose(file);
     fclose(temp);
     change_file(address);
-    return 0;
+    return 1;
 }
 
 int copy(char *input, int flag)
@@ -744,13 +869,29 @@ int copy(char *input, int flag)
     getchar();
     char move[3];
     scanf("%s",move);
+    FILE *file=fopen(address,"r");
+    if(file==NULL)
+    {
+        printf("File doesn't exist\n");
+        return 0;
+    }
+    fclose(file);
+    int result;
     if(strcmp(move,"-f")==0)
     {
-        clipboard_f(address,line_num,char_num,size_num);
+        result=clipboard_f(address,line_num,char_num,size_num);
+        if(result==0)
+        {
+            return 0;
+        }
     }
     else if(strcmp(move,"-b")==0)
     {
-        clipboard_b(address,line_num,char_num,size_num);
+        result=clipboard_b(address,line_num,char_num,size_num);
+        if(result==0)
+        {
+            return 0;
+        }
     }
     else
     {
@@ -790,15 +931,31 @@ int cut(char *input)
     getchar();
     char move[3];
     scanf("%s",move);
+    FILE *file=fopen(address,"r");
+    if(file==NULL)
+    {
+        printf("File doesn't exist\n");
+        return 0;
+    }
+    fclose(file);
+    int result_c,result_r;
     if(strcmp(move,"-f")==0)
     {
-        clipboard_f(address,line_num,char_num,size_num);
-        remove_f(address,line_num,char_num,size_num);
+        result_c=clipboard_f(address,line_num,char_num,size_num);
+        result_r=remove_f(address,line_num,char_num,size_num);
+        if(result_c==0 || result_r==0)
+        {
+            return 0;
+        }
     }
     else if(strcmp(move,"-b")==0)
     {
-        clipboard_b(address,line_num,char_num,size_num);
-        remove_b(address,line_num,char_num,size_num);
+        result_c=clipboard_b(address,line_num,char_num,size_num);
+        result_r=remove_b(address,line_num,char_num,size_num);
+        if(result_c==0 || result_r==0)
+        {
+            return 0;
+        }
     }
     else
     {
@@ -829,7 +986,7 @@ int paste(char *input)
         printf("File doesn't exist\n");
         return 0;
     }
-    FILE *temp=fopen("temp.t", "w");
+    FILE *temp=fopen("temp.txt", "w");
     for(int i=1; i<line_num; i++)
     {
         char str[1000];
@@ -841,7 +998,7 @@ int paste(char *input)
         char c=fgetc(file);
         fputc(c,temp);
     }
-    FILE *clipb=fopen("clipboard.txt", "r");
+    FILE *clipb=fopen("clipboard.t", "r");
     char clip;
     clip=fgetc(clipb);
     while(clip!=EOF)
@@ -866,40 +1023,36 @@ int paste(char *input)
 
 int clipboard_f(char *address, int line_num, int char_num, int size_num)
 {
-        FILE *file=fopen(address,"r");
-        FILE *clipb=fopen("clipboard.txt","w");
-        if(file==NULL)
-        {
-            printf("File doesn't exist\n");
-            return 0;
-        }
-        for(int i=1; i<line_num; i++)
-        {
-            char str[1000];
-            fgets(str,1000,file);
-        }
-        for(int j=0; j<char_num; j++)
-        {
-            fgetc(file);
-        }
-        for(int r=0; r<size_num || feof(stdin); r++)
-        {
-            char clip=fgetc(file);
-            fputc(clip,clipb);
-        }
-        fclose(file);
-        fclose(clipb);
-        return 0;
+    FILE *file=fopen(address,"r");
+    FILE *clipb=fopen("clipboard.t","w");
+    wchar_t* fileLPCWSTR = "clipboard.t";
+    int attr = GetFileAttributes(fileLPCWSTR);
+    if ((attr & FILE_ATTRIBUTE_HIDDEN) == 0)
+    {
+       SetFileAttributes(fileLPCWSTR, attr | FILE_ATTRIBUTE_HIDDEN);
+    }
+    for(int i=1; i<line_num; i++)
+    {
+        char str[1000];
+        fgets(str,1000,file);
+    }
+    for(int j=0; j<char_num; j++)
+    {
+        fgetc(file);
+    }
+    for(int r=0; r<size_num || feof(stdin); r++)
+    {
+        char clip=fgetc(file);
+        fputc(clip,clipb);
+    }
+    fclose(file);
+    fclose(clipb);
+    return 1;
 }
 
 int clipboard_b(char *address, int line_num, int char_num, int size_num)
 {
     FILE *file=fopen(address,"r");
-    if(file==NULL)
-    {
-        printf("File doesn't exist\n");
-        return 0;
-    }
     char str[1000];
     char *string1=(char*) calloc(1000,sizeof(char));
     for(int i=1; i<line_num; i++)
@@ -918,12 +1071,13 @@ int clipboard_b(char *address, int line_num, int char_num, int size_num)
     int num=lenght-size_num;
     fclose(file);
     file=fopen(address,"r");
-    if(file==NULL)
-    {
-        printf("File doesn't exist\n");
-        return 0;
-    }
     FILE *clipb=fopen("clipboard.t", "w");
+    wchar_t* fileLPCWSTR = "clipboard.t";
+    int attr = GetFileAttributes(fileLPCWSTR);
+    if ((attr & FILE_ATTRIBUTE_HIDDEN) == 0)
+    {
+       SetFileAttributes(fileLPCWSTR, attr | FILE_ATTRIBUTE_HIDDEN);
+    }
     for(int i=0; i<num; i++)
     {
         fgetc(file);
@@ -935,13 +1089,19 @@ int clipboard_b(char *address, int line_num, int char_num, int size_num)
     }
     fclose(file);
     fclose(clipb);
-    return 0;
+    return 1;
 }
 
 void undo_file(char *address)
 {
     FILE *file=fopen(address,"r");
-    FILE *un_file=fopen("undo.txt","w");
+    FILE *un_file=fopen("undo.t","w");
+    wchar_t* fileLPCWSTR = "undo.t";
+    int attr = GetFileAttributes(fileLPCWSTR);
+    if ((attr & FILE_ATTRIBUTE_HIDDEN) == 0)
+    {
+       SetFileAttributes(fileLPCWSTR, attr | FILE_ATTRIBUTE_HIDDEN);
+    }
     char chr=fgetc(file);
     while(chr!=EOF)
     {
@@ -963,7 +1123,7 @@ int undo(char *input)
     }
     fclose(file);
     file=fopen(address,"w");
-    FILE *un_file=fopen("undo.txt","r");
+    FILE *un_file=fopen("undo.t","r");
     char chr=fgetc(un_file);
     while(chr!=EOF)
     {
@@ -974,4 +1134,204 @@ int undo(char *input)
     fclose(un_file);
     printf("Undo successfully!\n");
     return 0;
+}
+
+void tree(char *base_path ,int round ,int depth)
+{
+    DIR *dir;
+    struct dirent *my_dir;
+    if (depth==-1)
+    {
+        if (!(dir=opendir(base_path)))
+        return;
+    }
+    else if (depth>=-1)
+    {
+        if (!(dir = opendir(base_path)) || round>=2*depth)
+            return;
+    }
+    else
+    {
+        printf("Invalid depth :(\n");
+        return;
+    }
+    while ((my_dir=readdir(dir))!=NULL)
+    {
+        char path[512];
+        if (strcmp(my_dir->d_name, ".") == 0 || strcmp(my_dir->d_name, "..") == 0)
+            continue;
+        snprintf(path, sizeof(path), "%s/%s", base_path, my_dir->d_name);
+        printf("|-%*s'%s'\n", round,"",my_dir->d_name);
+        tree(path,round+2,depth);
+    }
+    closedir(dir);
+}
+
+void auto_indent(char *input)
+{
+    char *address=path(input);
+    FILE *file=fopen(address,"r");
+    if(file==NULL)
+    {
+        printf("File doesn't exist\n");
+        return;
+    }
+    undo_file(address);
+    FILE *temp=fopen("temp.txt","w");
+    char chr=fgetc(file);
+    long len=0;
+    int counter=0,flag=0,last_enter=0;
+    char last_char;
+    while(chr!=EOF)
+    {
+        if(chr==' ')
+        {
+            if(flag==1)
+            {
+                fputc(chr,temp);
+                last_char=' ';
+            }
+            flag=0;
+            chr=fgetc(file);
+            if(chr==' ')
+            {
+                while(chr==' ')
+                {
+                    chr=fgetc(file);
+                }
+            }
+            else
+            {
+                if(chr!='{')
+                {
+                    last_char=chr;
+                    flag=1;
+                }
+                else
+                    continue;
+            }
+        }
+        if(chr=='{')
+        {
+            if(last_char!=' ' && flag==1)
+            {
+                fputc(' ',temp);
+            }
+            for(int i=0; i<counter; i++)
+            {
+                fputc(' ',temp);
+            }
+            fputc('{',temp);
+            fputc('\n',temp);
+            counter+=4;
+            last_char='{';
+            flag=0;
+        }
+        if(chr=='}')
+        {
+            if(last_char!='}')
+                fputc('\n',temp);
+            counter-=4;
+            if(counter<0)
+            {
+                counter=0;
+            }
+            for(int i=0; i<counter; i++)
+            {
+                fputc(' ',temp);
+            }
+            fputc('}',temp);
+            fputc('\n',temp);
+            last_char='}';
+            last_enter=1;
+            flag=0;
+        }
+        else
+        {
+            if(chr!='{' && chr!='\n')
+                fputc(chr,temp);
+            if(chr=='{')
+                flag=0;
+            if(chr=='\n')
+            {
+                if(last_enter==0)
+                {
+                    fputc('\n',temp);
+                }
+                flag=0;
+
+            }
+            else
+            {
+                flag=1;
+            }
+            last_char=chr;
+            last_enter=0;
+        }
+        chr=fgetc(file);
+    }
+    fclose(file);
+    fclose(temp);
+    change_file(address);
+    printf("Done!\n");
+    return;
+
+}
+
+void compare(char *input1, char *input2)
+{
+    char *address1=path(input1);
+    char *address2=path(input2);
+    long line1,line2,line_number=0;
+    char str1[1000],str2[1000];
+    char *string1=(char*) calloc(1000,sizeof(char));
+    char *string2=(char*) calloc(1000,sizeof(char));
+    line1=line_counter(address1,1);
+    line2=line_counter(address2,2);
+    if(line1==-1 || line2==-1)
+    {
+        return;
+    }
+    FILE *file1=fopen(address1,"r");
+    FILE *file2=fopen(address2,"r");
+    while(line_number<=line1 && line_number<=line2)
+    {
+        fgets(str1,1000,file1);
+        string1=str1;
+        fgets(str2,1000,file2);
+        string2=str2;
+        line_number++;
+        if(strcmp(string1,string2)!=0)
+        {
+            printf("============ #%d ============\n",line_number);
+            printf("%s\n%s\n",string1,string2);
+            break;
+        }
+    }
+    if(line_number>line1 && line_number<=line2)
+    {
+        printf("\nFile2 is longer\n");
+        printf(">>>>>>>>>>>> #%d - #%d >>>>>>>>>>>>\n",line_number,line2);
+        for(int i=line_number-1; i<=line2; i++)
+        {
+            fgets(str2,1000,file2);
+            string2=str2;
+            printf("%s\n", string2);
+        }
+    }
+    else if(line_number>line2 && line_number<=line1)
+    {
+        printf("\nFile1 is longer\n");
+        printf(">>>>>>>>>>>> #%d - #%d >>>>>>>>>>>>\n",line_number,line1);
+        for(int i=line_number-1; i<=line2; i++)
+        {
+            fgets(str1,1000,file1);
+            string1=str1;
+            printf("%s\n", string1);
+        }
+    }
+    fclose(file1);
+    fclose(file2);
+    printf("compared-.-\n");
+    return 1;
 }
